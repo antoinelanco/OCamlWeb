@@ -14,12 +14,14 @@ let establish_server server_fun sockaddr =
                     let outchan = Unix.out_channel_of_descr s in
                     begin
                     match caller with
-                    | ADDR_UNIX s -> printf "%s\n" s
-                    | ADDR_INET (a,b) -> printf "%s : %d\n" (string_of_inet_addr a) b
+                    | ADDR_UNIX s ->
+                      let () = printf "%s\n" s in
+                      server_fun inchan outchan s
+                    | ADDR_INET (a,b) ->
+                      let () = printf "%s : %d\n\n" (string_of_inet_addr a) b in
+                      server_fun inchan outchan (string_of_inet_addr a)
                     end;
-                    server_fun inchan outchan ;
-                    close_in inchan ;
-                    close_out outchan ;
+                    let () = close_in inchan in
                     exit 0
              | id -> Unix.close s; ignore(Unix.waitpid [] id)
 
@@ -29,27 +31,48 @@ let rec read_file f =
 try
     let res = input_line f in
     if String.length res = 1
-    then ()
+    then []
     else
-    let () = printf "%s\n" res in
-    read_file f
+    res :: (read_file f)
 with
-| End_of_file -> ()
+| End_of_file -> []
 
-let html = "<html><body>test</body></html>
-"
-let rep =
+
+let printReq tab = printf "%s\n------------------\n" (String.concat "\n" tab)
+
+let getGet tab =
+  let line = List.hd tab in
+  let ls = Str.split_delim (Str.regexp " HTTP") line in
+  Str.string_after (List.hd ls) 5
+
+let repOK c =
 "HTTP/1.1 200 OK
+Location: /
 Content-Type: text/html
-Connection: close
+Connection: close\n\n"^
+(String.concat "\n" (read_file c))
 
-"^html
+let repNOK =
+"HTTP/1.1 404 Not Found
+Location: /
+Content-Type: text/html
+Connection: close\n
+<!DOCTYPE html><html><head><title>Not Found</title></head><body> File Not Found </body></html>"
 
 
-let () = establish_server (fun inn ou -> read_file inn; output_string ou rep; flush ou) (ADDR_INET(inet_addr_of_string "127.0.0.1",int_of_string Sys.argv.(1)))
 
+let inout input output ip =
+  let tab = read_file input in
+  let file = getGet tab in
+  let () = printReq tab in
+  begin
+  try
+    let c = open_in file in
+    output_string output (repOK c)
+  with
+  | _ -> output_string output repNOK
+  end;
+  flush output
 
-
-
-(* printf 'GET / HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n' |
-  nc www.example.com 80 *)
+let () = establish_server inout
+(ADDR_INET(inet_addr_of_string "129.175.19.199",int_of_string Sys.argv.(1)))

@@ -1,6 +1,6 @@
 .PHONY: 	all clean native depend
 
-OCB_FLAGS   = -cflag -w -cflag -40 -use-ocamlfind -lib unix
+OCB_FLAGS   = -cflag -w -cflag -40 -use-ocamlfind -lib unix -lib str
 OCB = ocamlbuild $(OCB_FLAGS)
 
 all: native
