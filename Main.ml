@@ -1,5 +1,12 @@
 open Unix
 open Printf
+open Read
+open Printer
+open ReqHTTP
+
+let ipAddr = inet_addr_of_string (List.assoc "ip" readConfig)
+let port = int_of_string (List.assoc "port" readConfig)
+let rootDir = List.assoc "root" readConfig
 
 let establish_server server_fun sockaddr =
 
@@ -27,52 +34,19 @@ let establish_server server_fun sockaddr =
 
       done
 
-let rec read_file f =
-try
-    let res = input_line f in
-    if String.length res = 1
-    then []
-    else
-    res :: (read_file f)
-with
-| End_of_file -> []
-
-
-let printReq tab = printf "%s\n------------------\n" (String.concat "\n" tab)
-
-let getGet tab =
-  let line = List.hd tab in
-  let ls = Str.split_delim (Str.regexp " HTTP") line in
-  Str.string_after (List.hd ls) 5
-
-let repOK c =
-"HTTP/1.1 200 OK
-Location: /
-Content-Type: text/html
-Connection: close\n\n"^
-(String.concat "\n" (read_file c))
-
-let repNOK =
-"HTTP/1.1 404 Not Found
-Location: /
-Content-Type: text/html
-Connection: close\n
-<!DOCTYPE html><html><head><title>Not Found</title></head><body> File Not Found </body></html>"
-
-
 
 let inout input output ip =
-  let tab = read_file input in
+  let tab = readFile input in
   let file = getGet tab in
   let () = printReq tab in
   begin
   try
-    let c = open_in file in
-    output_string output (repOK c)
+    let c = open_in (rootDir^file) in
+    output_string output (rep200 c);
   with
-  | _ -> output_string output repNOK
+  | _ -> output_string output rep404
   end;
   flush output
 
 let () = establish_server inout
-(ADDR_INET(inet_addr_of_string "129.175.19.199",int_of_string Sys.argv.(1)))
+(ADDR_INET(ipAddr,port))

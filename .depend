@@ -1,2 +1,8 @@
-Main.cmo :
-Main.cmx :
+Main.cmo : ReqHTTP.cmo Read.cmo Printer.cmo
+Main.cmx : ReqHTTP.cmx Read.cmx Printer.cmx
+Printer.cmo :
+Printer.cmx :
+Read.cmo :
+Read.cmx :
+ReqHTTP.cmo : Read.cmo
+ReqHTTP.cmx : Read.cmx
