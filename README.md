@@ -1,9 +1,6 @@
 # OCamlWeb
 
-config.conf
-
-ip = xxx.xxx.xxx.xxx
-
-port = xxxx
-
+config.conf  
+ip = xxx.xxx.xxx.xxx  
+port = xxxx  
 root = xxxx/
